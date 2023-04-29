@@ -1,14 +1,3 @@
-/*
-As a user, I can:
-
-1. See all ramen images in the div with the id of ramen-menu. When the page loads, request the data from the server to get all the ramen objects. Then, display the image for each of the ramen using an img tag inside the #ramen-menu div.
-
-2. Click on an image from the #ramen-menu div and see all the info about that ramen displayed inside the #ramen-detail div and where it says insert comment here and insert rating here.
-
-3. Create a new ramen after submitting the new-ramen form. The new ramen should be added to the#ramen-menu div. The new ramen does not need to persist; in other words, if you refresh the page, it's okay that the new ramen is no longer on the page.
-
-*/
-
 document.addEventListener("DOMContentLoaded", () => {
   loadRamenImages();
 });
@@ -16,28 +5,25 @@ document.addEventListener("DOMContentLoaded", () => {
 const loadRamenImages = function () {
   fetch("http://localhost:3000/ramens")
     .then((res) => res.json())
-    .then((arr) => appendImageToMenu(arr))
+    .then((arr) => arr.map(appendImageToMenu))
     .then((arr) => addListeners())
-    .catch(console.log("Failed to load"));
+    .catch((err) => console.log(err));
 };
 
-const appendImageToMenu = function (ramen) {
-  ramen.map((obj) => {
-    const img = document.createElement("img");
-    img.setAttribute("src", `${obj.image}`);
-    img.setAttribute("alt", `${obj.name} from ${obj.restaurant}`);
-    img.setAttribute("id", `${obj.id}`);
-    img.setAttribute("class", "ramen-img");
-    document.getElementById("ramen-menu").appendChild(img);
-  });
+const appendImageToMenu = function (obj) {
+  const img = document.createElement("img");
+  img.setAttribute("src", `${obj.image}`);
+  img.setAttribute("alt", `${obj.name} from ${obj.restaurant}`);
+  img.setAttribute("id", `${obj.id}`);
+  img.setAttribute("class", "ramen-img");
+  document.getElementById("ramen-menu").appendChild(img);
 };
 
 const addListeners = function () {
-  const imgs = Array.from(
-    document.getElementsByClassName("ramen-img"),
-    addListener
-  );
-  return imgs;
+  Array.from(document.getElementsByClassName("ramen-img"), addListener);
+  document
+    .getElementById("new-ramen")
+    .addEventListener("submit", handleFormSubmit);
 };
 
 const addListener = function (arr) {
@@ -58,5 +44,29 @@ const populateCard = function (e) {
       restaurantName.textContent = e.restaurant;
       rating.textContent = e.rating;
       comment.textContent = e.comment;
-    });
+    })
+    .catch((err) => console.log(err));
+};
+
+const handleFormSubmit = function (e) {
+  e.preventDefault();
+  fetch("http://localhost:3000/ramens/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      name: e.target.name.value,
+      restaurant: e.target.restaurant.value,
+      image: e.target.image.value,
+      rating: e.target.rating.value,
+      comment: e.target["new-comment"].value,
+    }),
+  })
+    .then((resp) => resp.json())
+    .then((data) => appendImageToMenu(data))
+    .then((data) => addListeners())
+    .catch((err) => console.log(err, "Could not post ramen to server"));
+  document.getElementById("new-ramen").reset();
 };
